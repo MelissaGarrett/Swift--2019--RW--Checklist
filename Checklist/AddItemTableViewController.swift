@@ -8,7 +8,20 @@
 
 import UIKit
 
-class AddItemTableViewController: UITableViewController, UITextFieldDelegate {
+// To allow any VC to get a ChecklistItem from this VC (if they implement this protocol)
+protocol ItemDetailViewControllerDelegate: class {
+    func itemDetailViewControllerDidCancel(_ controller: ItemDetailViewController)
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem)
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem)
+}
+
+class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
+    
+    weak var delegate: ItemDetailViewControllerDelegate?
+    
+    // Properties to receive data from ChecklistVC
+    weak var todoList: TodoList?
+    weak var itemToEdit: ChecklistItem?
 
     @IBOutlet var addBarButton: UIBarButtonItem!
     @IBOutlet var cancelBarButton: UIBarButtonItem!
@@ -16,19 +29,35 @@ class AddItemTableViewController: UITableViewController, UITextFieldDelegate {
     @IBOutlet var textField: UITextField!
     
     @IBAction func cancel(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        delegate?.itemDetailViewControllerDidCancel(self)
     }
     
     @IBAction func done(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        if let item = itemToEdit, let text = textField.text { // edit an item
+            item.text = text
+            delegate?.itemDetailViewController(self, didFinishEditing: item)
+        } else { // add a new item
+            if let item = todoList?.newTodo() {
+                if let textFieldText = textField.text {
+                    item.text = textFieldText
+                }
+                item.checked = false
+                delegate?.itemDetailViewController(self, didFinishAdding: item)
+            }
+        }
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        navigationItem.largeTitleDisplayMode = .never
+                
+        // We are in Edit mode (received an item from ChecklistVC)
+        if let item = itemToEdit {
+            title = "Edit Item"
+            textField.text = item.text
+            addBarButton.isEnabled = true
+        }
         
-        textField.delegate = self
+        navigationItem.largeTitleDisplayMode = .never
     }
     
     // To display keyboard when user taps the Add button

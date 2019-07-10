@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ChecklistViewController: UITableViewController {
+class ChecklistViewController: UITableViewController, ItemDetailViewControllerDelegate {
     var todoList: TodoList
     
     // Adds a new row individually to bottom of table instead of reloading the entire table
@@ -32,7 +32,6 @@ class ChecklistViewController: UITableViewController {
         // Do any additional setup after loading the view.
         
         navigationController?.navigationBar.prefersLargeTitles = true
-        
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -74,13 +73,64 @@ class ChecklistViewController: UITableViewController {
     }
     
     func configureCheckmark(for cell: UITableViewCell, with item: ChecklistItem) {
+        guard let checkmark = cell.viewWithTag(1001) as? UILabel else {
+            return
+        }
         
         if item.checked {
-            cell.accessoryType = .checkmark
+            checkmark.text = "√"
         } else {
-            cell.accessoryType = .none
+            checkmark.text = ""
         }
-        item.toggleChecked()
+        item.toggleChecked() // update the model
+    }
+    
+    func itemDetailViewControllerDidCancel(_ controller: ItemDetailViewController) {
+        navigationController?.popViewController(animated: true)
+    }
+    
+    // To add the new item to this VC's table
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishAdding item: ChecklistItem) {
+        navigationController?.popViewController(animated: true)
+        
+        let rowIndex = todoList.todos.count - 1
+        
+        let indexPath = IndexPath(row: rowIndex, section: 0)
+        let indexPaths = [indexPath]
+        
+        tableView.insertRows(at: indexPaths, with: .automatic)
+    }
+    
+    // To update the edited item in this VC's table
+    func itemDetailViewController(_ controller: ItemDetailViewController, didFinishEditing item: ChecklistItem) {
+        if let index = todoList.todos.firstIndex(of: item) { // find item in model
+            let indexPath = IndexPath(row: index, section: 0)
+            if let cell = tableView.cellForRow(at: indexPath) {
+                configureText(for: cell, with: item)
+            }
+        }
+        
+        navigationController?.popViewController(animated: true)
+    }
+    
+    // Pass data to AddItemTableViewController to add a new item to list or
+    // to edit an existing item
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "AddItemSegue" {
+            if let itemDetailViewController = segue.destination as? ItemDetailViewController {
+                itemDetailViewController.delegate = self
+                itemDetailViewController.todoList = todoList
+            }
+        } else if segue.identifier == "EditItemSegue" {
+                if let itemDetailViewController = segue.destination as? ItemDetailViewController {
+                    if let cell = sender as? UITableViewCell,
+                        let indexPath = tableView.indexPath(for: cell) {
+                        let item = todoList.todos[indexPath.row]
+                        itemDetailViewController.itemToEdit = item
+                        itemDetailViewController.delegate = self
+                    }
+                }
+        }
     }
 }
 
