@@ -21,6 +21,25 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
         tableView.insertRows(at: [indexPath], with: .automatic)
     }
     
+    // To delete multiple rows at once
+    @IBAction func deleteItems(_ sender: Any) {
+        if let selectedRows = tableView.indexPathsForSelectedRows { // get all the selected rows
+            var items =  [ChecklistItem]() // the items to be deleted
+            
+            for indexPath in selectedRows {
+                items.append(todoList.todos[indexPath.row])
+            }
+            
+            // Remove items from model
+            todoList.remove(items: items)
+            
+            // Remove items from tableview
+            tableView.beginUpdates()
+            tableView.deleteRows(at: selectedRows, with: .automatic)
+            tableView.endUpdates()
+        }
+    }
+    
     required init?(coder aDecoder: NSCoder) {
         todoList = TodoList()
         
@@ -33,6 +52,8 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
         
         navigationController?.navigationBar.prefersLargeTitles = true
         navigationItem.leftBarButtonItem = editButtonItem
+        
+        tableView.allowsMultipleSelectionDuringEditing = true // so you can select multiple rows
     }
     
     // To allow editing after tapping the Edit bar button item
@@ -57,6 +78,10 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        if tableView.isEditing {
+            return
+        }
+        
         if let cell = tableView.cellForRow(at: indexPath) {
             let item = todoList.todos[indexPath.row]
             item.toggleChecked() // update the model
@@ -127,7 +152,7 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
         navigationController?.popViewController(animated: true)
     }
     
-    // Pass data to AddItemTableViewController to add a new item to list or
+    // Pass data to AddItemTableViewController (ItemDetailViewController) to add a new item to list or
     // to edit an existing item
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "AddItemSegue" {

@@ -23,7 +23,7 @@ class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
     weak var todoList: TodoList?
     weak var itemToEdit: ChecklistItem?
 
-    @IBOutlet var addBarButton: UIBarButtonItem!
+    @IBOutlet var addBarButton: UIBarButtonItem! // Renamed to Done
     @IBOutlet var cancelBarButton: UIBarButtonItem!
     
     @IBOutlet var textField: UITextField!
@@ -32,6 +32,7 @@ class ItemDetailViewController: UITableViewController, UITextFieldDelegate {
         delegate?.itemDetailViewControllerDidCancel(self)
     }
     
+    // After editing or adding, one of the protocol methods is called
     @IBAction func done(_ sender: Any) {
         if let item = itemToEdit, let text = textField.text { // edit an item
             item.text = text
