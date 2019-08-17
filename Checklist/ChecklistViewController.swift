@@ -10,6 +10,7 @@ import UIKit
 
 class ChecklistViewController: UITableViewController, ItemDetailViewControllerDelegate {
     var todoList: TodoList
+    var tableData: [[ChecklistItem?]?]! // a sorted list of ChecklistItems
     
     // Adds a new row individually to bottom of table instead of reloading the entire table
     @IBAction func addItem(_ sender: Any) {
@@ -54,6 +55,20 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
         navigationItem.leftBarButtonItem = editButtonItem
         
         tableView.allowsMultipleSelectionDuringEditing = true // so you can select multiple rows
+        
+        // Sorts items into arrays
+        let sectionTitleCount = UILocalizedIndexedCollation.current().sectionTitles.count
+        var allSections = [[ChecklistItem?]?](repeating: nil, count: sectionTitleCount)
+        var sectionNumber = 0
+        let collation = UILocalizedIndexedCollation.current()
+        for item in todoList.todos {
+            sectionNumber = collation.section(for: item, collationStringSelector: #selector(getter: ChecklistItem.text))
+            if allSections[sectionNumber] == nil {
+                allSections[sectionNumber] = [ChecklistItem?]()
+            }
+            allSections[sectionNumber]!.append(item)
+        }
+        tableData = allSections
     }
     
     // To allow editing after tapping the Edit bar button item
@@ -64,16 +79,17 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return todoList.todos.count
+        return tableData[section] == nil ? 0 : tableData[section]!.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ChecklistItem", for: indexPath)
-        let item = todoList.todos[indexPath.row]
-        
-        configureText(for: cell, with: item)
-        configureCheckmark(for: cell, with: item)
-        
+        //let item = todoList.todos[indexPath.row]
+        if let item = tableData[indexPath.section]?[indexPath.row] {
+            configureText(for: cell, with: item)
+            configureCheckmark(for: cell, with: item)
+        }
+    
         return cell
     }
     
@@ -170,6 +186,22 @@ class ChecklistViewController: UITableViewController, ItemDetailViewControllerDe
                     }
                 }
         }
+    }
+    
+    override func numberOfSections(in tableView: UITableView) -> Int {
+        return tableData.count
+    }
+    
+    override func sectionIndexTitles(for tableView: UITableView) -> [String]? {
+        return UILocalizedIndexedCollation.current().sectionTitles
+    }
+    
+    override func tableView(_ tableView: UITableView, sectionForSectionIndexTitle title: String, at index: Int) -> Int {
+        return UILocalizedIndexedCollation.current().section(forSectionIndexTitle: index)
+    }
+    
+    override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        return UILocalizedIndexedCollation.current().sectionTitles[section]
     }
 }
 
